@@ -1,4 +1,7 @@
-
+"""
+@author: robotcator
+@date: 20210404
+"""
 import torch
 from .sym_quant import FakeLinearQuantization
 
