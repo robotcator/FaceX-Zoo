@@ -109,12 +109,21 @@ def train(conf):
     backbone_factory = BackboneFactory(conf.backbone_type, conf.backbone_conf_file)    
     head_factory = HeadFactory(conf.head_type, conf.head_conf_file)
     model = FaceModel(backbone_factory, head_factory)
-    ori_epoch = 0
-    if conf.resume:
-        ori_epoch = torch.load(args.pretrain_model)['epoch'] + 1
-        state_dict = torch.load(args.pretrain_model)['state_dict']
-        model.load_state_dict(state_dict)
-    model = torch.nn.DataParallel(model).cuda()
+    if conf.quant:
+        ori_epoch = 0
+        from quantization.quantize import register_quantization_hook
+        if args.pretrain_mode:
+            state_dict = torch.load(args.pretrain_model)['state_dict']
+            model.load_state_dict(state_dict)
+        model = register_quantization_hook(model, bits=8, filter_name=['head'])
+        print (model)
+    else:
+        ori_epoch = 0
+        if conf.resume:
+            ori_epoch = torch.load(args.pretrain_model)['epoch'] + 1
+            state_dict = torch.load(args.pretrain_model)['state_dict']
+            model.load_state_dict(state_dict)
+        model = torch.nn.DataParallel(model).cuda()
     parameters = [p for p in model.parameters() if p.requires_grad]
     optimizer = optim.SGD(parameters, lr = conf.lr, 
                           momentum = conf.momentum, weight_decay = 1e-4)
